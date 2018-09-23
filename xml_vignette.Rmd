@@ -6,14 +6,22 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 library(tidyverse)
 library(xml2)
 ```
 
 # XML
 
-_XML_ stands for Extensible Markup Language and it was designed as a structured way to share data. Because the data exist in a software/ hardware indepdent format this format allows for exchange between users.[^1] It it because of this platform indepdence and human and machine readable nature that XML documents are often used as the payload for API calls.[^2] This means that a user can request data via an API and an XML will be supplied in return.
+_XML_ stands for E**x**tensible **M**arkup **L**anguage and it was designed as a structured way to share data. Because the data exist in a software/ hardware indepdent format this format allows for exchange between users.[^1] It it because of this platform indepdence and human and machine readable nature that XML documents are often used as the payload for API calls.[^2] This means that a user can request data via an API and an XML will be supplied in return. Adlditionally, there is an hierarchical format for XML documents which are broken into _nodes_. Nodes provide structure with subsequent _child_ and _sibling_ nodes which represent elements deeper in the hierarchy. Additionally, the _attributes_ within the nodes contain the actual values. Tags provide the name of the node and are denoted as follows:
+
+* start tag as `<section>` 
+* end tag as `</section>` 
+* empty element as `<line-break />` 
+
+*Xpath*s can be used to navigate within an XML document. Knowing the `xpath` of an item will allow for easy querying and retrieval of the desired document within the `xpath`
+
+
 
 [^1]: "https://www.w3schools.com/xml/xml_whatis.asp"
 [^2]: "https://en.wikipedia.org/wiki/XML"
