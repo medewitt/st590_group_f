@@ -1,0 +1,54 @@
+---
+title: "Vignette of XMLs"
+author: "Michael DeWitt, Daniel Sebastian, Eunyoung Song"
+date: "9/23/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# XML
+
+## What is it?
+
+## Where is it used?
+
+## Why is it a good way to store data?
+
+# Discuss Packages with Pros and Cons
+*We can use the cran pageviews to research this* [here](https://cran.r-project.org/web/views/WebTechnologies.html)
+
+## XML
+
+## XML2
+
+## Explain why chose one package
+
+# Give an Example of Reading In
+
+```{r}
+library(tidyverse)
+library(xml2)
+
+url <- "https://securegrants.neh.gov/open/data/"
+
+raw <- read_xml("data/NEH_Grants2010s.xml")
+
+xml_children(raw)
+
+```
+
+
+## data with two categorical and two continuous
+
+## include a custom function
+
+## create a new variable
+
+## create a contingency table
+
+## create some plots
+
+
