@@ -7,52 +7,56 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(xml2)
 ```
 
 # XML
 
-## What is it?
+_XML_ stands for Extensible Markup Language and it was designed as a structured way to share data. Because the data exist in a software/ hardware indepdent format this format allows for exchange between users.[^1] It it because of this platform indepdence and human and machine readable nature that XML documents are often used as the payload for API calls.[^2] This means that a user can request data via an API and an XML will be supplied in return.
 
-## Where is it used?
+[^1]: "https://www.w3schools.com/xml/xml_whatis.asp"
+[^2]: "https://en.wikipedia.org/wiki/XML"
 
-## Why is it a good way to store data?
+XML is a good way to communicate data because it is platform indepdent making it good for use in APIs. Additionally, it is human readable so that adds for some power for record checking. There is the ability to put comments into XML via specific document tabs which allows for more meta-data.
 
 # Discuss Packages with Pros and Cons
+There are two major packages that are useful for parsing XML type documents. There is the older `XML` package and the newer (circa 2015) `xml2`. Both packages have similar functions and capabilties for parsing XML type documents.  `XML` is the more comphrensive of the two packages, but it has a higher learning curve. Additionally, while piping and tidy principles can be applied using the `XML` package, the `xml2` package was designed by Jim Hester of RStudio with the _tidy_ programming paradigm in mind. While the package isn't quite as comphrensive (fewer functions) most of the main operations can be completed and the syntactic "tidyverse" sugar makes it easy to accomplish familiar tasks (e.g. `read_xml`).
+
+
 *We can use the cran pageviews to research this* [here](https://cran.r-project.org/web/views/WebTechnologies.html)
 
-## XML
 
-## XML2
+Following our general preference for working in the tidyverse programming paradigm, we will use the `xml2` package. This will allow for optimised ussage of the pipe and tidy data frames.
 
-## Explain why chose one package
+# An Example
 
-# Give an Example of Reading In
+This example will use data that is available from data.gov, a website of the United States government for sharing public data. For the sake of this example an XML file was downloaded from the website regarding National Endowment for the Humanities grant applications and awards for the decade of the 2010s. 
 
 ```{r}
-library(tidyverse)
-library(xml2)
 
 url <- "https://securegrants.neh.gov/open/data/"
 
 raw <- read_xml("data/NEH_Grants2010s.xml")
 
 children <- xml_contents(raw)
-children[[1]]
-
-raw %>% 
-  xml_find_all("//ApplicantType") %>% 
-  xml_text()
 ```
+
+After reading this data set into memory we can see that we need to design a parser that combines the XML nodes into a tidy data frame. This can be done by writing a function that looks for the xpath within the XML document, find the nodes, parses those nodes and then combines all of our outputs into a data frame that is returned by the function. 
 
 ```{r}
 parse_grant_data <- function(df){
+  
+  if(!attributes(df)$class[[1]] %in% c("xml_node", "xml_document")){
+    stop("Not an XML class object")
+  }
   
   applicant_type <- df %>% 
   xml_find_all("//ApplicantType") %>% 
   xml_text()
   
-  institution <- df %>% 
-  xml_find_all("//Institution") %>% 
+  institution <- df %>%
+  xml_find_first("//Institution") %>%
   xml_text()
   
   org_type <- df %>% 
@@ -67,13 +71,32 @@ parse_grant_data <- function(df){
   xml_find_all("//InstState") %>% 
   xml_text()
   
+  lat <- suppressWarnings(df %>% 
+  xml_find_all("//Latitude") %>% 
+  xml_text() %>% 
+    as.numeric())
+  
+  lon <- suppressWarnings(df %>% 
+  xml_find_all("//Longitude") %>% 
+  xml_text() %>% 
+    as.numeric())
+  
   congress_district <- df %>% 
   xml_find_all("//CongressionalDistrict") %>% 
+  xml_text()
+  
+  division <- df %>% 
+  xml_find_all("//Division") %>% 
   xml_text()
   
   year_awarded <- df %>% 
   xml_find_all("//YearAwarded") %>% 
   xml_text() %>% 
+    as.numeric()
+  
+  approved_award <- df %>% 
+    xml_find_all("//AwardOutright") %>% 
+    xml_text() %>% 
     as.numeric()
   
   award_matching <- df %>% 
@@ -86,15 +109,25 @@ parse_grant_data <- function(df){
   xml_text() %>% 
     as.numeric()
   
+  original_amount <- df %>% 
+    xml_find_all("//OriginalAmount") %>% 
+    xml_text() %>% 
+    as.numeric()
+  
   out <- data_frame(applicant_type =applicant_type,
               institution = institution,
-              org_type=org_type,
-              inst_city=inst_city,
-              inst_state=inst_state,
-              congress_district=congress_district,
-              year_awarded=year_awarded,
-              award_matching=award_matching,
-              approved_matching=approved_matching)
+              org_type = org_type,
+              inst_city = inst_city,
+              inst_state = inst_state,
+              congress_district = congress_district,
+              lat = lat,
+              lon = lon,
+              division = division,
+              year_awarded = year_awarded,
+              approved_award = approved_award,
+              award_matching = award_matching,
+              approved_matching = approved_matching,
+              original_amount = original_amount)
   out
   
 }
@@ -103,12 +136,72 @@ parse_grant_data <- function(df){
 
 ## data with two categorical and two continuous
 
+```{r}
+df_1 <- parse_grant_data(raw)
+```
+
+
 ## include a custom function
 
 ## create a new variable
 
+```{r}
+df_2 <- df_1 %>% 
+  mutate(total_award = approved_award + award_matching,
+         perc_of_ask = original_amount/total_award)
+```
+
+
 ## create a contingency table
+
+```{r}
+table(df_2$org_type, df_2$division)
+```
+
 
 ## create some plots
 
+```{r echo=FALSE}
+df_2 %>% 
+ggplot(aes(division))+
+  geom_bar()+
+  coord_flip()+
+  labs(
+    title = "Count of Awards by Division"
+  )+
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+df_2 %>% 
+  group_by(inst_state) %>% 
+  summarise(total_award_m = sum(total_award)/1e6) %>% 
+  top_n(15) %>% 
+  ggplot(aes(reorder(inst_state, total_award_m), total_award_m))+
+  geom_col()+
+  coord_flip()+
+  labs(
+    title = "Top 15 State Award Winners",
+    x = "State",
+    y = "Awarded in Millions"
+  )+
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+df_2 %>% 
+  group_by(division, inst_state) %>% 
+  summarise(total_award_m = sum(total_award)/1e6) %>% 
+  top_n(15) %>% 
+  ggplot(aes(reorder(inst_state, total_award_m), total_award_m))+
+  geom_col()+
+  coord_flip()+
+  labs(
+    title = "Top 15 State Award Winners by Division",
+    x = "State",
+    y = "Awarded in Millions"
+  )+
+  facet_wrap(~division, scales = "free")+
+  theme_minimal()
+```
 
