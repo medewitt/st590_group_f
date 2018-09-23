@@ -36,8 +36,68 @@ url <- "https://securegrants.neh.gov/open/data/"
 
 raw <- read_xml("data/NEH_Grants2010s.xml")
 
-xml_children(raw)
+children <- xml_contents(raw)
+children[[1]]
 
+raw %>% 
+  xml_find_all("//ApplicantType") %>% 
+  xml_text()
+```
+
+```{r}
+parse_grant_data <- function(df){
+  
+  applicant_type <- df %>% 
+  xml_find_all("//ApplicantType") %>% 
+  xml_text()
+  
+  institution <- df %>% 
+  xml_find_all("//Institution") %>% 
+  xml_text()
+  
+  org_type <- df %>% 
+  xml_find_all("//OrganizationType") %>% 
+  xml_text()
+  
+  inst_city <- df %>% 
+  xml_find_all("//InstCity") %>% 
+  xml_text()
+  
+  inst_state <- df %>% 
+  xml_find_all("//InstState") %>% 
+  xml_text()
+  
+  congress_district <- df %>% 
+  xml_find_all("//CongressionalDistrict") %>% 
+  xml_text()
+  
+  year_awarded <- df %>% 
+  xml_find_all("//YearAwarded") %>% 
+  xml_text() %>% 
+    as.numeric()
+  
+  award_matching <- df %>% 
+  xml_find_all("//AwardMatching") %>% 
+  xml_text() %>% 
+    as.numeric()
+  
+  approved_matching <- df %>% 
+  xml_find_all("//ApprovedMatching") %>% 
+  xml_text() %>% 
+    as.numeric()
+  
+  out <- data_frame(applicant_type =applicant_type,
+              institution = institution,
+              org_type=org_type,
+              inst_city=inst_city,
+              inst_state=inst_state,
+              congress_district=congress_district,
+              year_awarded=year_awarded,
+              award_matching=award_matching,
+              approved_matching=approved_matching)
+  out
+  
+}
 ```
 
 
